@@ -9,4 +9,4 @@ This module checks RSS feeds and queues an email about any news (for the Email S
 
 Currently it's tested on YouTube videos and playlists, and on StackExchange feeds. May work in others, but I didn't test (haven't needed so far).
 
-Check the `mod_user_info.json` file in the example folder. Edit it an put it in the module-specific folder inside the data folder that the module creates upon startup. This file configures the feeds and the email(s) to send the notifications to.
+Check the `mod_user_info.json` file in the example folder. Edit it an put it in the module-specific folder inside the data folder that the module creates upon startup, together with the mod_gen_info.json file. This file configures the feeds and the email(s) to send the notifications to.
