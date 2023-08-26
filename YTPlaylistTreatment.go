@@ -1,3 +1,24 @@
+/*******************************************************************************
+ * Copyright 2023-2023 Edw590
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ ******************************************************************************/
+
 package main
 
 import (
@@ -32,12 +53,12 @@ the latest videos - because this function is to be used *only* if scrapingNeeded
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - playlist_id – the ID of the playlist
   - item_num – the number of the item to get (0 is the last, 1 is the second to last, etc.)
   - item_count – the number of items in the playlist RSS feed
 
-> Returns:
+– Returns:
   - the video info or all fields with _GEN_ERROR on them if any error occurs (check that with the video ID)
 */
 func ytPlaylistScraping(playlist_id string, item_num int, item_count int) _VideoInfo {
@@ -52,7 +73,7 @@ func ytPlaylistScraping(playlist_id string, item_num int, item_count int) _Video
 	// This is here to make sure the page is only scraped once
 	if playlistPage_GL.id != playlist_id {
 		var playlist_url string = "https://www.youtube.com/playlist?list=" + playlist_id
-		var page_html *string = Utils.UWebpages.GetPageHtml(playlist_url)
+		var page_html *string = Utils.GetPageHtmlTIMEDATE(playlist_url)
 		if nil == page_html {
 			playlistPage_GL.id = ""
 
@@ -155,10 +176,10 @@ update them --> scraping the visual playlist page for the videos is needed.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - parsed_feed – the parsed feed
 
-> Returns:
+– Returns:
   - true if scraping is needed, false otherwise
  */
 func scrapingNeeded(parsed_feed *gofeed.Feed) bool {

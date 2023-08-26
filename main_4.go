@@ -1,9 +1,29 @@
+/*******************************************************************************
+ * Copyright 2023-2023 Edw590
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ ******************************************************************************/
+
 package main
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,9 +34,6 @@ import (
 )
 
 // RSS Feed Notifier //
-
-var modInfo_GL Utils.ModInfo = Utils.ModInfo{}
-var modFileMainInfo_GL Utils.ModFileMainInfo = Utils.ModFileMainInfo{}
 
 // Cut the video title in more than 67 characters. After those 67 put ellipsis. This is what YT used to do.
 // //////////////////////////////////////////////////
@@ -64,12 +81,17 @@ type _NewsInfo struct {
 // 15 for YT - 100 seems perfect).
 const _MAX_URLS_STORED int = 100
 
-var realMain Utils.RealMain = nil
-func main() {Utils.ModStartup(Utils.NUM_MOD_RssFeedNotifier, realMain)}
+type _ModSpecificInfo any
+var (
+	realMain Utils.RealMain = nil
+	modProvInfo_GL Utils.ModProvInfo
+	modGenFileInfo_GL Utils.ModGenFileInfo[_ModSpecificInfo]
+)
+func main() {Utils.ModStartup[_ModSpecificInfo](Utils.NUM_MOD_RssFeedNotifier, realMain)}
 func init() {realMain =
-	func(realMain_param_1 Utils.ModInfo, realMain_param_2 Utils.ModFileMainInfo) {
-		modInfo_GL = realMain_param_1
-		modFileMainInfo_GL = realMain_param_2
+	func(realMain_param_1 Utils.ModProvInfo, realMain_param_2 any) {
+		modProvInfo_GL = realMain_param_1
+		modGenFileInfo_GL = realMain_param_2.(Utils.ModGenFileInfo[_ModSpecificInfo])
 
 		for {
 			var feedsInfo []_MFIFeedInfo = getFeedsInfo()
@@ -111,7 +133,7 @@ func init() {realMain =
 				fmt.Println("feedType.type_2: " + feedType.type_2)
 				fmt.Println("feedType.type_3: " + feedType.type_3)
 
-				var notif_news_file_path Utils.GPath = modInfo_GL.Data_dir.Add("urls_notified_news/",
+				var notif_news_file_path Utils.GPath = modProvInfo_GL.Data_dir.Add("urls_notified_news/",
 					strconv.Itoa(feedInfo.Feed_num) + ".txt")
 				var newsInfo_list []_NewsInfo = nil
 				var notified_news_list []string = nil
@@ -215,9 +237,9 @@ func init() {realMain =
 
 			end_loop:
 
-			os.Exit(0)
+			return
 
-			modFileMainInfo_GL.LoopSleep(2*60)
+			modGenFileInfo_GL.LoopSleep(2*60)
 		}
 	}
 }
@@ -227,10 +249,10 @@ getFeedType gets the _FeedType information from _MFIFeedInfo.Feed_type.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - feed_type – the _MFIFeedInfo.Feed_type
 
-> Returns:
+– Returns:
   - the _FeedType information
 */
 func getFeedType(feed_type string) _FeedType {
@@ -255,24 +277,23 @@ isNewNews checks if the news is new.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - newsInfo_list – the list of notified news
   - title – the title of the news
   - url – the URL of the news
 
-> Returns:
+– Returns:
   - true if the news is new, false otherwise
  */
 func isNewNews(newsInfo_list []_NewsInfo, title string, url string) bool {
 	fmt.Println("Checking if news is new: " + title)
 	for _, newsInfo := range newsInfo_list {
 		if  newsInfo.url == url && newsInfo.title == title {
-			fmt.Println("News is not new: " + title)
 			return false
 		}
 	}
 
-	fmt.Println("News is new: " + title)
+	fmt.Println("News is new ^^^^^")
 
 	return true
 }
@@ -282,12 +303,12 @@ getFeedsInfo gets the information of the feeds.
 
 -----------------------------------------------------------
 
-> Returns:
+– Returns:
   - the information of the feeds or nil if an error occurs
 */
 func getFeedsInfo() []_MFIFeedInfo {
 	var modFileInfo _ModFileInfo
-	if !modInfo_GL.GetModFileInfo(&modFileInfo) {
+	if !modProvInfo_GL.GetModUserInfo(&modFileInfo) {
 		return nil
 	}
 
@@ -299,14 +320,14 @@ queueEmailAllRecps queues an email to be sent to all recipients.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - sender_name – the name of the sender
   - subject – the subject of the email
   - html – the HTML of the email
  */
 func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 	var modFileInfo _ModFileInfo
-	if !modInfo_GL.GetModFileInfo(&modFileInfo) {
+	if !modProvInfo_GL.GetModUserInfo(&modFileInfo) {
 		return false
 	}
 
@@ -329,7 +350,7 @@ func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 		//			Content_transfer_encoding: "base64",
 		//			Content_id: file_add,
 		//		}
-		//		data, _ := os.ReadFile(modInfo_GL.Dir.Add("yt_email_images/", file_add).
+		//		data, _ := os.ReadFile(modProvInfo_GL.Dir.Add("yt_email_images/", file_add).
 		//			GPathToStringConversion())
 		//		multipart.Body = base64.StdEncoding.EncodeToString(data)
 		//
@@ -338,9 +359,9 @@ func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 		//}
 
 		// Write the HTML to a file in case debugging is needed.
-		modInfo_GL.Temp_dir.Add("last_html_queued.html").WriteTextFile(html)
+		modProvInfo_GL.Temp_dir.Add("last_html_queued.html").WriteTextFile(html)
 
-		Utils.UEmail.QueueEmail(Utils.EmailInfo{
+		Utils.QueueEmailEMAIL(Utils.EmailInfo{
 			Sender:  sender_name,
 			Mail_to: mail_to,
 			Subject: subject,

@@ -1,3 +1,24 @@
+/*******************************************************************************
+ * Copyright 2023-2023 Edw590
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ ******************************************************************************/
+
 package main
 
 import (
@@ -19,13 +40,13 @@ youTubeTreatment processes the YouTube feed.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - feedType – the type of the feed
   - parsed_feed – the parsed feed
   - item_num – the number of the current item in the feed
   - title_url_only – whether to only get the title and URL of the item through _NewsInfo (can be used for optimization)
 
-> Returns:
+– Returns:
   - the email info (without the Mail_to field)
   - the news info (useful especially if it's a playlist and it had to be scraped and the item order reversed internally)
 All EmailInfo fields are empty if an error occurs, if the video is to be ignored (like if it's a Short), or if
@@ -169,7 +190,7 @@ func youTubeTreatment(feedType _FeedType, parsed_feed *gofeed.Feed, item_num int
 		things_replace[VID_DESC] = things_replace[VID_DESC][:67] + "..."
 	}
 
-	var msg_html string = *Utils.UEmail.GetModelFile(Utils.MODEL_FILE_YT_VIDEO)
+	var msg_html string = *Utils.GetModelFileEMAIL(Utils.MODEL_FILE_YT_VIDEO)
 	for key, value := range things_replace {
 		msg_html = strings.ReplaceAll(msg_html, key, value)
 	}
@@ -192,14 +213,14 @@ The format returned is the same as the one from the SecondsToTimeStr() function.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - video_url – the URL of the video
 
-> Returns:
+– Returns:
   - the duration of the video if it was found, _VID_TIME_DEF otherwise
 */
 func getVideoDuration(video_url string) string {
-	var p_page_html *string = Utils.UWebpages.GetPageHtml(video_url)
+	var p_page_html *string = Utils.GetPageHtmlTIMEDATE(video_url)
 	if nil == p_page_html {
 		return _VID_TIME_DEF
 	}
@@ -224,10 +245,10 @@ The format returned is "HH:MM:SS", but if the video is less than an hour long, t
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - seconds_str – the number of seconds as a string
 
-> Returns:
+– Returns:
   - the time string
  */
 func SecondsToTimeStr(seconds_str string) string {
@@ -249,14 +270,14 @@ getChannelImageUrl gets the URL of the channel image of by getting the channel's
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - channel_code – the code of the channel
 
-> Returns:
+– Returns:
   - the URL of the channel image if it was found, _GEN_ERROR otherwise
 */
 func getChannelImageUrl(channel_code string) string {
-	var p_page_html *string = Utils.UWebpages.GetPageHtml("https://www.youtube.com/channel/" + channel_code)
+	var p_page_html *string = Utils.GetPageHtmlTIMEDATE("https://www.youtube.com/channel/" + channel_code)
 	if nil == p_page_html {
 		return _GEN_ERROR
 	}
@@ -266,7 +287,7 @@ func getChannelImageUrl(channel_code string) string {
 	// --> CAN CHANGE (checked on 2023-07-04).
 	// The 1st and 2nd occurrences are the user's image and the channel's background image, respectively.
 	var text_to_find string = "https://yt3.googleusercontent.com/"
-	var idxs_begin []int = Utils.UGeneral.FindAllIndexes(page_html, text_to_find)
+	var idxs_begin []int = Utils.FindAllIndexesGENERAL(page_html, text_to_find)
 	if len(idxs_begin) >= 3 {
 		var idx_begin int = idxs_begin[2]
 		var idx_end int = strings.Index(page_html[idx_begin:], "\"")
@@ -282,11 +303,11 @@ isShort checks if the video is a Short.
 
 -----------------------------------------------------------
 
-> Params:
+– Params:
   - video_texts – the texts of the video like title and description
   - video_len – the length of the video from getVideoDuration()
 
-> Returns:
+– Returns:
   - true if the video is a short, false otherwise (also false if video_len is _VID_TIME_DEF)
  */
 func isShort(video_texts []string, video_len string) bool {
@@ -306,7 +327,7 @@ func isShort(video_texts []string, video_len string) bool {
 	// Lastly, if none of the others worked (a video can be a Short and not have the tags), if the video is 1 minute or
 	// less long, mark it as Short.
 	var length_seconds = 0
-	if len(Utils.UGeneral.FindAllIndexes(video_len, ":")) == 1 {
+	if len(Utils.FindAllIndexesGENERAL(video_len, ":")) == 1 {
 		length_parsed, _ := time.Parse("04:05", video_len)
 		length_seconds = length_parsed.Minute()*60 + length_parsed.Second()
 	} else {
