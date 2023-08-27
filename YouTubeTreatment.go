@@ -29,7 +29,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"golang.org/x/exp/slices"
 
-	"VISOR_S_L/Utils"
+	"VISOR_Server/Utils"
 )
 
 const _VID_TIME_DEF string = "--:--"
