@@ -133,7 +133,7 @@ func init() {realMain =
 				fmt.Println("feedType.type_2: " + feedType.type_2)
 				fmt.Println("feedType.type_3: " + feedType.type_3)
 
-				var notif_news_file_path Utils.GPath = modProvInfo_GL.Data_dir.Add("urls_notified_news/",
+				var notif_news_file_path Utils.GPath = modProvInfo_GL.UserData_dir.Add("urls_notified_news/",
 					strconv.Itoa(feedInfo.Feed_num) + ".txt")
 				var newsInfo_list []_NewsInfo = nil
 				var notified_news_list []string = nil
