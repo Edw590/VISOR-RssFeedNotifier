@@ -5,9 +5,8 @@ module RssFeedNotifier
 go 1.20
 
 require (
-	VISOR_Server/Utils v0.0.0-00010101000000-000000000000
 	github.com/mmcdole/gofeed v1.2.1
-	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
 require (
@@ -19,8 +18,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/ztrue/tracerr v0.4.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 )
 
-replace VISOR_Server/Utils => ./Utils
+//require Utils v0.0.0-00010101000000-000000000000
+//replace Utils => ./Utils

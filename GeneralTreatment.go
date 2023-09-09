@@ -27,7 +27,7 @@ import (
 
 	"github.com/mmcdole/gofeed"
 
-	"VISOR_Server/Utils"
+	"Utils"
 )
 
 /*
