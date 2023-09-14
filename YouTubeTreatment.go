@@ -34,6 +34,9 @@ import (
 
 const _VID_TIME_DEF string = "--:--"
 const _VID_TIME_LIVE string = "00:00" // Live videos have 00:00 as duration
+const _VID_TITLE_MAX_LEN int = 67
+// The max length of the video description on the email preview (YouTube used to trim after 27 chars)
+const _VID_DESC_MAX_LEN int = _VID_TITLE_MAX_LEN // Better with 67 chars. 27 is too little.
 
 /*
 youTubeTreatment processes the YouTube feed.
@@ -148,11 +151,10 @@ func youTubeTreatment(feedType _FeedType, parsed_feed *gofeed.Feed, item_num int
 		}
 	}
 
-	// Like YouTube used to do - trim after 67 chars
 	var vid_title string = things_replace[VID_TITLE]
 	var vid_title_original string = vid_title
-	if len(vid_title) > 67 {
-		vid_title = vid_title[:67] + "..."
+	if len(vid_title) > _VID_TITLE_MAX_LEN {
+		vid_title = vid_title[:_VID_TITLE_MAX_LEN] + "..."
 		things_replace[VID_TITLE] = vid_title
 	}
 
@@ -184,10 +186,8 @@ func youTubeTreatment(feedType _FeedType, parsed_feed *gofeed.Feed, item_num int
 		things_replace[HTML_TITLE] = msg_subject
 	}
 
-	if len(things_replace[VID_DESC]) > 67 {
-		// The original was up to 27 chars but I increased it to the same as the title to appear instead of "RSS Feed
-		// notifications" in the email preview.
-		things_replace[VID_DESC] = things_replace[VID_DESC][:67] + "..."
+	if len(things_replace[VID_DESC]) > _VID_DESC_MAX_LEN {
+		things_replace[VID_DESC] = things_replace[VID_DESC][:_VID_DESC_MAX_LEN] + "..."
 	}
 
 	var msg_html string = *Utils.GetModelFileEMAIL(Utils.MODEL_FILE_YT_VIDEO)
