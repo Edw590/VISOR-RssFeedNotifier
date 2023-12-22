@@ -22,7 +22,6 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -46,55 +45,38 @@ generalTreatment does the general treatment of an RSS feed item.
  */
 func generalTreatment(parsed_feed *gofeed.Feed, item_num int, title_url_only bool, custom_msg_subject string) (
 					Utils.EmailInfo, _NewsInfo) {
-	const (
-		TITLE      string = "|3234_ENTRY_TITLE|"
-		URL        string = "|3234_ENTRY_URL|"
-		AUTHOR     string = "|3234_ENTRY_AUTHOR|"
-		AUTHOR_URL string = "|3234_ENTRY_AUTHOR_URL|"
-		PUB_DATE   string = "|3234_ENTRY_PUB_DATE|"
-		UPD_DATE   string = "|3234_ENTRY_UPD_DATE|"
-		DESC       string = "|3234_ENTRY_DESCRIPTION|"
-	)
-
 	var feed_item *gofeed.Item = parsed_feed.Items[item_num]
 
 	var things_replace = map[string]string{
-		TITLE:      feed_item.Title,
-		URL:        feed_item.Link,
-		AUTHOR:     feed_item.Authors[0].Name,
-		AUTHOR_URL: "", // Can't get with gofeed
-		PUB_DATE:   feed_item.Published,
-		UPD_DATE:   feed_item.Updated,
-		DESC:       feed_item.Description,
+		Utils.MODEL_RSS_ENTRY_TITLE_EMAIL:       feed_item.Title,
+		Utils.MODEL_RSS_ENTRY_AUTHOR_EMAIL:      feed_item.Authors[0].Name,
+		Utils.MODEL_RSS_ENTRY_DESCRIPTION_EMAIL: feed_item.Description,
+		Utils.MODEL_RSS_ENTRY_URL_EMAIL:         feed_item.Link,
+		Utils.MODEL_RSS_ENTRY_PUB_DATE_EMAIL:    feed_item.Published,
+		Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL:    feed_item.Updated,
 	}
 	var newsInfo _NewsInfo = _NewsInfo{
-		title: things_replace[TITLE],
-		url:   things_replace[URL],
+		title: things_replace[Utils.MODEL_RSS_ENTRY_TITLE_EMAIL],
+		url:   things_replace[Utils.MODEL_RSS_ENTRY_URL_EMAIL],
 	}
 
 	if title_url_only {
 		return Utils.EmailInfo{}, newsInfo
 	}
 
-	if things_replace[UPD_DATE] != "" {
-		if things_replace[UPD_DATE] == things_replace[PUB_DATE] {
-			things_replace[UPD_DATE] = "[new]"
+	if things_replace[Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL] != "" {
+		if things_replace[Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL] == things_replace[Utils.MODEL_RSS_ENTRY_PUB_DATE_EMAIL] {
+			things_replace[Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL] = "[new]"
 		}
 	}
 
-	things_replace[PUB_DATE] = convertDate(things_replace[PUB_DATE])
-	things_replace[UPD_DATE] = convertDate(things_replace[UPD_DATE])
+	things_replace[Utils.MODEL_RSS_ENTRY_PUB_DATE_EMAIL] = convertDate(things_replace[Utils.MODEL_RSS_ENTRY_PUB_DATE_EMAIL])
+	things_replace[Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL] = convertDate(things_replace[Utils.MODEL_RSS_ENTRY_UPD_DATE_EMAIL])
 
-	var msg_html string = *Utils.GetModelFileEMAIL(Utils.MODEL_FILE_RSS)
-	for key, value := range things_replace {
-		msg_html = strings.ReplaceAll(msg_html, key, value)
-	}
+	var email_info Utils.EmailInfo = Utils.GetModelFileEMAIL(Utils.MODEL_FILE_RSS, things_replace)
+	email_info.Subject = custom_msg_subject
 
-	return Utils.EmailInfo{
-		Sender:  "VISOR - RSS",
-		Subject: custom_msg_subject,
-		Html:    msg_html,
-	}, newsInfo
+	return email_info, newsInfo
 }
 
 /*

@@ -81,20 +81,20 @@ type _NewsInfo struct {
 // 15 for YT - 100 seems perfect).
 const _MAX_URLS_STORED int = 100
 
-type _ModSpecificInfo any
+type _MGIModSpecInfo any
 var (
 	realMain Utils.RealMain = nil
-	modProvInfo_GL Utils.ModProvInfo
-	modGenFileInfo_GL Utils.ModGenFileInfo[_ModSpecificInfo]
+	modStartInfo_GL Utils.ModStartInfo
+	modGenInfo_GL Utils.ModGenInfo[_MGIModSpecInfo]
 )
-func main() {Utils.ModStartup[_ModSpecificInfo](Utils.NUM_MOD_RssFeedNotifier, realMain)}
+func main() {Utils.ModStartup[_MGIModSpecInfo](Utils.NUM_MOD_RssFeedNotifier, realMain)}
 func init() {realMain =
-	func(realMain_param_1 Utils.ModProvInfo, realMain_param_2 any) {
-		modProvInfo_GL = realMain_param_1
-		modGenFileInfo_GL = realMain_param_2.(Utils.ModGenFileInfo[_ModSpecificInfo])
+	func(realMain_param_1 Utils.ModStartInfo, realMain_param_2 any) {
+		modStartInfo_GL = realMain_param_1
+		modGenInfo_GL = realMain_param_2.(Utils.ModGenInfo[_MGIModSpecInfo])
 
 		for {
-			var feedsInfo []_MFIFeedInfo = getFeedsInfo()
+			var feedsInfo []_FeedInfo = getFeedsInfo()
 			if nil == feedsInfo {
 				fmt.Println("Error getting feeds info")
 
@@ -133,8 +133,8 @@ func init() {realMain =
 				fmt.Println("feedType.type_2: " + feedType.type_2)
 				fmt.Println("feedType.type_3: " + feedType.type_3)
 
-				var notif_news_file_path Utils.GPath = modProvInfo_GL.UserData_dir.Add("urls_notified_news/",
-					strconv.Itoa(feedInfo.Feed_num) + ".txt")
+				var notif_news_file_path Utils.GPath = modStartInfo_GL.UserData_dir.Add2("urls_notified_news/",
+					strconv.Itoa(feedInfo.Feed_num)+".txt")
 				var newsInfo_list []_NewsInfo = nil
 				var notified_news_list []string = nil
 				if notif_news_file_path.Exists() {
@@ -216,7 +216,7 @@ func init() {realMain =
 					if !new_feed && !ignore_video {
 						// If the feed is a newly added one, don't send emails for ALL the items in the feed - which are
 						// being treated for the first time.
-						fmt.Println("Queuing email: " + email_info.Subject + " by " + email_info.Sender)
+						fmt.Println("Queuing email: " + email_info.Subject)
 						error_notifying = !queueEmailAllRecps(email_info.Sender, email_info.Subject, email_info.Html)
 					}
 
@@ -239,18 +239,18 @@ func init() {realMain =
 
 			return
 
-			modGenFileInfo_GL.LoopSleep(2*60)
+			modGenInfo_GL.LoopSleep(2*60)
 		}
 	}
 }
 
 /*
-getFeedType gets the _FeedType information from _MFIFeedInfo.Feed_type.
+getFeedType gets the _FeedType information from _FeedInfo.Feed_type.
 
 -----------------------------------------------------------
 
 – Params:
-  - feed_type – the _MFIFeedInfo.Feed_type
+  - feed_type – the _FeedInfo.Feed_type
 
 – Returns:
   - the _FeedType information
@@ -306,13 +306,13 @@ getFeedsInfo gets the information of the feeds.
 – Returns:
   - the information of the feeds or nil if an error occurs
 */
-func getFeedsInfo() []_MFIFeedInfo {
-	var modFileInfo _ModFileInfo
-	if !modProvInfo_GL.GetModUserInfo(&modFileInfo) {
+func getFeedsInfo() []_FeedInfo {
+	var modUserInfo _ModUserInfo
+	if !modStartInfo_GL.GetModUserInfo(&modUserInfo) {
 		return nil
 	}
 
-	return modFileInfo.Feeds_info
+	return modUserInfo.Feeds_info
 }
 
 /*
@@ -326,12 +326,12 @@ queueEmailAllRecps queues an email to be sent to all recipients.
   - html – the HTML of the email
  */
 func queueEmailAllRecps(sender_name string, subject string, html string) bool {
-	var modFileInfo _ModFileInfo
-	if !modProvInfo_GL.GetModUserInfo(&modFileInfo) {
+	var modUserInfo _ModUserInfo
+	if !modStartInfo_GL.GetModUserInfo(&modUserInfo) {
 		return false
 	}
 
-	for _, mail_to := range modFileInfo.Mails_to {
+	for _, mail_to := range modUserInfo.Mails_to {
 		// This is to add the images to the email using CIDs instead of using URLs which could/can go down at any time.
 		// Except most email clients don't support CIDs... So I'll leave this here in case the images stop working with
 		// the URLs and then either this or embeded Base64 on the src attribute of the <img> tag or hosted in the server
@@ -350,7 +350,7 @@ func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 		//			Content_transfer_encoding: "base64",
 		//			Content_id: file_add,
 		//		}
-		//		data, _ := os.ReadFile(modProvInfo_GL.Dir.Add("yt_email_images/", file_add).
+		//		data, _ := os.ReadFile(modStartInfo_GL.Dir.Add("", "yt_email_images/", file_add).
 		//			GPathToStringConversion())
 		//		multipart.Body = base64.StdEncoding.EncodeToString(data)
 		//
@@ -359,7 +359,7 @@ func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 		//}
 
 		// Write the HTML to a file in case debugging is needed.
-		modProvInfo_GL.Temp_dir.Add("last_html_queued.html").WriteTextFile(html)
+		modStartInfo_GL.Temp_dir.Add2("last_html_queued.html").WriteTextFile(html)
 
 		Utils.QueueEmailEMAIL(Utils.EmailInfo{
 			Sender:  sender_name,

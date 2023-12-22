@@ -60,102 +60,87 @@ have a value).
 func youTubeTreatment(feedType _FeedType, parsed_feed *gofeed.Feed, item_num int, title_url_only bool) (Utils.EmailInfo,
 			_NewsInfo) {
 	const (
-		VIDEO_COLOR string = "#212121; padding" // Default video color (sort of black)
-		LIVE_COLOR  string = "#E62117; padding" // Default live color (sort of red)
-	)
-	const (
-		CH_ID      string = "|3234_CHANNEL_CODE|"
-		CH_NAME    string = "|3234_CHANNEL_NAME|"
-		CH_IMAGE   string = "|3234_CHANNEL_IMAGE|"
-		PL_ID      string = "|3234_PLAYLIST_CODE|"
-		VID_TITLE  string = "|3234_VIDEO_TITLE|"
-		VID_ID     string = "|3234_VIDEO_CODE|"
-		VID_IMAGE  string = "|3234_VIDEO_IMAGE|"
-		VID_DESC   string = "|3234_VIDEO_DESCRIPTION|"
-		VID_LEN    string = "|3234_VIDEO_TIME|"
-		SUB_NAME   string = "|3234_SUBSCRIPTION_NAME|"
-		SUB_LINK   string = "|3234_SUBSCRIPTION_LINK|"
-		TIME_COLOR string = VIDEO_COLOR
-		HTML_TITLE string = "|3234_HTML_TITLE|"
+		VIDEO_COLOR string = "#212121" // Default video color (sort of black)
+		LIVE_COLOR  string = "#E62117" // Default live color (sort of red)
 	)
 
 	var things_replace = map[string]string{
-		CH_NAME:    parsed_feed.Authors[0].Name,
-		CH_ID:      parsed_feed.Items[0].Extensions["yt"]["channelId"][0].Value,
-		CH_IMAGE:   _GEN_ERROR,
-		PL_ID:      "", // Leave empty if it's not playlist
-		VID_TITLE:  _GEN_ERROR,
-		VID_ID:     _GEN_ERROR,
-		VID_IMAGE:  _GEN_ERROR,
-		VID_DESC:   _GEN_ERROR,
-		VID_LEN:    _GEN_ERROR,
-		SUB_NAME:   parsed_feed.Title,
-		SUB_LINK:   _GEN_ERROR,
-		TIME_COLOR: VIDEO_COLOR,
-		HTML_TITLE: _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_HTML_TITLE_EMAIL:        _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_CHANNEL_NAME_EMAIL:      parsed_feed.Authors[0].Name,
+		Utils.MODEL_YT_VIDEO_CHANNEL_CODE_EMAIL:      parsed_feed.Items[0].Extensions["yt"]["channelId"][0].Value,
+		Utils.MODEL_YT_VIDEO_CHANNEL_IMAGE_EMAIL:     _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL:       _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL: _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_CODE_EMAIL:        _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_IMAGE_EMAIL:       _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL:        _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_VIDEO_TIME_COLOR_EMAIL:  VIDEO_COLOR,
+		Utils.MODEL_YT_VIDEO_PLAYLIST_CODE_EMAIL:     "", // Leave empty if it's not playlist
+		Utils.MODEL_YT_VIDEO_SUBSCRIPTION_LINK_EMAIL: _GEN_ERROR,
+		Utils.MODEL_YT_VIDEO_SUBSCRIPTION_NAME_EMAIL: parsed_feed.Title,
 	}
 	if !title_url_only {
-		things_replace[CH_IMAGE] = getChannelImageUrl(things_replace[CH_ID])
+		things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_IMAGE_EMAIL] = getChannelImageUrl(things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_CODE_EMAIL])
 	}
 
 	if feedType.type_2 == _TYPE_2_YT_CHANNEL {
 		// The last part is what YouTube used to put in the URLs (taken from the original model)
-		things_replace[SUB_LINK] = "channel/" + things_replace[CH_ID] + "%3Ffeature%3Dem-uploademail"
+		things_replace[Utils.MODEL_YT_VIDEO_SUBSCRIPTION_LINK_EMAIL] = "channel/" + things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_CODE_EMAIL] + "%3Ffeature%3Dem-uploademail"
 	} else if feedType.type_2 == _TYPE_2_YT_PLAYLIST {
-		things_replace[PL_ID] = parsed_feed.Extensions["yt"]["playlistId"][0].Value
-		things_replace[SUB_LINK] = "playlist?list=" + things_replace[PL_ID]
+		things_replace[Utils.MODEL_YT_VIDEO_PLAYLIST_CODE_EMAIL] = parsed_feed.Extensions["yt"]["playlistId"][0].Value
+		things_replace[Utils.MODEL_YT_VIDEO_SUBSCRIPTION_LINK_EMAIL] = "playlist?list=" + things_replace[Utils.MODEL_YT_VIDEO_PLAYLIST_CODE_EMAIL]
 	}
 
 	if feedType.type_2 == _TYPE_2_YT_PLAYLIST && scrapingNeeded(parsed_feed) {
 		// Scraping is only needed for video information. The feed has the rest.
 		// For scraping we only use the number of the item to guide through the video array. The rest comes from the
 		// playlist page.
-		var video_info _VideoInfo = ytPlaylistScraping(things_replace[PL_ID], item_num, len(parsed_feed.Items))
+		var video_info _VideoInfo = ytPlaylistScraping(things_replace[Utils.MODEL_YT_VIDEO_PLAYLIST_CODE_EMAIL], item_num, len(parsed_feed.Items))
 		if video_info.id == _GEN_ERROR {
 			return Utils.EmailInfo{}, _NewsInfo{}
 		}
 
-		things_replace[VID_TITLE] = video_info.title
-		things_replace[VID_ID] = video_info.id
-		things_replace[VID_IMAGE] = video_info.image
-		things_replace[VID_LEN] = video_info.length
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL] = video_info.title
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_CODE_EMAIL] = video_info.id
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_IMAGE_EMAIL] = video_info.image
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL] = video_info.length
 
 		// No way to get the description from the playlist visual page unless the video appears on the RSS feed.
-		things_replace[VID_DESC] = _GEN_ERROR
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL] = _GEN_ERROR
 		for _, item := range parsed_feed.Items {
 			if item.Extensions["yt"]["videoId"][0].Value == video_info.id {
-				things_replace[VID_DESC] = item.Extensions["media"]["group"][0].Children["description"][0].Value
+				things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL] = item.Extensions["media"]["group"][0].Children["description"][0].Value
 
 				break
 			}
 		}
 	} else {
 		var feed_item *gofeed.Item = parsed_feed.Items[item_num]
-		things_replace[VID_TITLE] = feed_item.Title
-		things_replace[VID_ID] = feed_item.Extensions["yt"]["videoId"][0].Value
-		things_replace[VID_IMAGE] = feed_item.Extensions["media"]["group"][0].Children["thumbnail"][0].Attrs["url"]
-		things_replace[VID_DESC] = feed_item.Extensions["media"]["group"][0].Children["description"][0].Value
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL] = feed_item.Title
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_CODE_EMAIL] = feed_item.Extensions["yt"]["videoId"][0].Value
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_IMAGE_EMAIL] = feed_item.Extensions["media"]["group"][0].Children["thumbnail"][0].Attrs["url"]
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL] = feed_item.Extensions["media"]["group"][0].Children["description"][0].Value
 		if !title_url_only {
-			things_replace[VID_LEN] = getVideoDuration(feed_item.Link)
+			things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL] = getVideoDuration(feed_item.Link)
 		}
 	}
 
-	var is_short bool = isShort([]string{things_replace[VID_TITLE], things_replace[VID_DESC]}, things_replace[VID_LEN])
+	var is_short bool = isShort([]string{things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL], things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL]}, things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL])
 
 	// If it's not to include Shorts and the video is a Short, return only the news info (to ignore the notification but
 	// memorize that the video is to be ignored).
 	if (feedType.type_3 != _TYPE_3_YT_INC_SHORTS && is_short) || title_url_only {
 		return Utils.EmailInfo{}, _NewsInfo{
-			title: things_replace[VID_TITLE],
-			url: "https://www.youtube.com/watch?v=" + things_replace[VID_ID],
+			title: things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL],
+			url: "https://www.youtube.com/watch?v=" + things_replace[Utils.MODEL_YT_VIDEO_VIDEO_CODE_EMAIL],
 		}
 	}
 
-	var vid_title string = things_replace[VID_TITLE]
+	var vid_title string = things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL]
 	var vid_title_original string = vid_title
 	if len(vid_title) > _VID_TITLE_MAX_LEN {
 		vid_title = vid_title[:_VID_TITLE_MAX_LEN] + "..."
-		things_replace[VID_TITLE] = vid_title
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TITLE_EMAIL] = vid_title
 	}
 
 	var video_short string = ""
@@ -167,42 +152,36 @@ func youTubeTreatment(feedType _FeedType, parsed_feed *gofeed.Feed, item_num int
 
 	var msg_subject string = _GEN_ERROR
 	if feedType.type_2 == _TYPE_2_YT_CHANNEL {
-		if _VID_TIME_LIVE == things_replace[VID_LEN] {
+		if _VID_TIME_LIVE == things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL] {
 			// Live video
-			msg_subject = "🔴 " + things_replace[CH_NAME] + " está agora em direto: " + vid_title + "!"
-			things_replace[HTML_TITLE] = "Em direto no YouTube: " + things_replace[CH_NAME] + " – " + vid_title + "!"
+			msg_subject = "🔴 " + things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_NAME_EMAIL] + " está agora em direto: " + vid_title + "!"
+			things_replace[Utils.MODEL_YT_VIDEO_HTML_TITLE_EMAIL] = "Em direto no YouTube: " + things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_NAME_EMAIL] + " – " + vid_title + "!"
 
 			// Change the length rectangle
-			things_replace[TIME_COLOR] = LIVE_COLOR
-			things_replace[VID_LEN] = "LIVE" // Change the video length to "LIVE"
+			things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_COLOR_EMAIL] = LIVE_COLOR
+			things_replace[Utils.MODEL_YT_VIDEO_VIDEO_TIME_EMAIL] = "LIVE" // Change the video length to "LIVE"
 		} else {
 			// Normal video
-			msg_subject = things_replace[CH_NAME] + " acabou de carregar um " + video_short
-			things_replace[HTML_TITLE] = msg_subject
+			msg_subject = things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_NAME_EMAIL] + " acabou de carregar um " + video_short
+			things_replace[Utils.MODEL_YT_VIDEO_HTML_TITLE_EMAIL] = msg_subject
 		}
 	} else if feedType.type_2 == _TYPE_2_YT_PLAYLIST {
 		// Playlist video
-		msg_subject = things_replace[CH_NAME] + " acabou de adicionar um " + video_short + " a " + parsed_feed.Title
-		things_replace[HTML_TITLE] = msg_subject
+		msg_subject = things_replace[Utils.MODEL_YT_VIDEO_CHANNEL_NAME_EMAIL] + " acabou de adicionar um " + video_short + " a " + parsed_feed.Title
+		things_replace[Utils.MODEL_YT_VIDEO_HTML_TITLE_EMAIL] = msg_subject
 	}
 
-	if len(things_replace[VID_DESC]) > _VID_DESC_MAX_LEN {
-		things_replace[VID_DESC] = things_replace[VID_DESC][:_VID_DESC_MAX_LEN] + "..."
+	if len(things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL]) > _VID_DESC_MAX_LEN {
+		things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL] = things_replace[Utils.MODEL_YT_VIDEO_VIDEO_DESCRIPTION_EMAIL][:_VID_DESC_MAX_LEN] + "..."
 	}
 
-	var msg_html string = *Utils.GetModelFileEMAIL(Utils.MODEL_FILE_YT_VIDEO)
-	for key, value := range things_replace {
-		msg_html = strings.ReplaceAll(msg_html, key, value)
-	}
+	var email_info Utils.EmailInfo = Utils.GetModelFileEMAIL(Utils.MODEL_FILE_YT_VIDEO, things_replace)
+	email_info.Subject = msg_subject
 
-	return Utils.EmailInfo{
-		Sender:  "YouTube",
-		Subject: msg_subject,
-		Html:    msg_html,
-	},
+	return email_info,
 	_NewsInfo{
 		title: vid_title_original,
-		url:   "https://www.youtube.com/watch?v=" + things_replace[VID_ID],
+		url:   "https://www.youtube.com/watch?v=" + things_replace[Utils.MODEL_YT_VIDEO_VIDEO_CODE_EMAIL],
 	}
 }
 
