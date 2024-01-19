@@ -84,14 +84,12 @@ const _MAX_URLS_STORED int = 100
 type _MGIModSpecInfo any
 var (
 	realMain Utils.RealMain = nil
-	modStartInfo_GL Utils.ModStartInfo
-	modGenInfo_GL Utils.ModGenInfo[_MGIModSpecInfo]
+	moduleInfo_GL Utils.ModuleInfo[_MGIModSpecInfo]
 )
 func main() {Utils.ModStartup[_MGIModSpecInfo](Utils.NUM_MOD_RssFeedNotifier, realMain)}
 func init() {realMain =
-	func(realMain_param_1 Utils.ModStartInfo, realMain_param_2 any) {
-		modStartInfo_GL = realMain_param_1
-		modGenInfo_GL = realMain_param_2.(Utils.ModGenInfo[_MGIModSpecInfo])
+	func(realMain_param_1 any) {
+		moduleInfo_GL = realMain_param_1.(Utils.ModuleInfo[_MGIModSpecInfo])
 
 		for {
 			var feedsInfo []_FeedInfo = getFeedsInfo()
@@ -133,13 +131,13 @@ func init() {realMain =
 				fmt.Println("feedType.type_2: " + feedType.type_2)
 				fmt.Println("feedType.type_3: " + feedType.type_3)
 
-				var notif_news_file_path Utils.GPath = modStartInfo_GL.UserData_dir.Add2("urls_notified_news/",
+				var notif_news_file_path Utils.GPath = moduleInfo_GL.ModDirsInfo.UserData.Add2("urls_notified_news/",
 					strconv.Itoa(feedInfo.Feed_num)+".txt")
 				var newsInfo_list []_NewsInfo = nil
 				var notified_news_list []string = nil
 				if notif_news_file_path.Exists() {
 					newsInfo_list = make([]_NewsInfo, 0, _MAX_URLS_STORED)
-					var notified_news string = *notif_news_file_path.ReadFile()
+					var notified_news string = *notif_news_file_path.ReadTextFile()
 					notified_news_list = strings.Split(notified_news, "\n")
 					for _, line := range notified_news_list {
 						var line_split []string = strings.Split(line, " \\\\// ")
@@ -239,7 +237,9 @@ func init() {realMain =
 
 			return
 
-			modGenInfo_GL.LoopSleep(2*60)
+			if moduleInfo_GL.LoopSleep(2*60) {
+				return
+			}
 		}
 	}
 }
@@ -308,7 +308,7 @@ getFeedsInfo gets the information of the feeds.
 */
 func getFeedsInfo() []_FeedInfo {
 	var modUserInfo _ModUserInfo
-	if !modStartInfo_GL.GetModUserInfo(&modUserInfo) {
+	if !moduleInfo_GL.GetModUserInfo(&modUserInfo) {
 		return nil
 	}
 
@@ -327,7 +327,7 @@ queueEmailAllRecps queues an email to be sent to all recipients.
  */
 func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 	var modUserInfo _ModUserInfo
-	if !modStartInfo_GL.GetModUserInfo(&modUserInfo) {
+	if !moduleInfo_GL.GetModUserInfo(&modUserInfo) {
 		return false
 	}
 
@@ -359,7 +359,7 @@ func queueEmailAllRecps(sender_name string, subject string, html string) bool {
 		//}
 
 		// Write the HTML to a file in case debugging is needed.
-		modStartInfo_GL.Temp_dir.Add2("last_html_queued.html").WriteTextFile(html)
+		moduleInfo_GL.ModDirsInfo.Temp.Add2("last_html_queued.html").WriteTextFile(html)
 
 		Utils.QueueEmailEMAIL(Utils.EmailInfo{
 			Sender:  sender_name,
